@@ -1,0 +1,25 @@
+instances:
+  - name: "node-1"
+    dns:
+      - "localhost"
+      - "es01"
+  - name: "node-2"
+    dns:
+      - "localhost"
+      - "es02"
+  - name: "node-3"
+    dns:
+      - "localhost"
+      - "es03"
+  - name: "my-kibana"
+    dns:
+      - "localhost"
+      - "kibana"
+  - name: "logstash"
+    dns:
+      - "localhost"
+      - "logstash"
+  - name: "apm"
+    dns:
+      - "localhost"
+      - "apm"

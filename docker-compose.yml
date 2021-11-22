@@ -1,0 +1,149 @@
+version: "3.3"
+
+services:
+
+# 初回のみ実行でcertsを作成する。
+# 既に作成済みであれば実行しないで終了する。
+  create_certs:
+    container_name: create_certs
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    tty: true
+    command: >
+      bash -c '
+        if [[ ! -f /certs/bundle.zip ]]; then
+          bin/elasticsearch-certutil cert --silent --pem --in config/certificates/instances.yml -out /certs/bundle.zip;
+          unzip /certs/bundle.zip -d /certs; 
+        fi;
+        chown -R 1000:0 /certs
+      '
+    user: "0"
+    working_dir: /usr/share/elasticsearch
+    volumes: 
+      - "./certs:/certs"
+      - ".:/usr/share/elasticsearch/config/certificates"
+
+  es01:
+    container_name: es01
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    tty: true
+    privileged: true
+    user: root
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
+      - xpack.license.self_generated.type=trial
+    volumes:
+      - ./certs:/usr/share/elasticsearch/config/certs
+      - data01:/usr/share/elasticsearch/data
+      - ./elasticsearch/elasticsearch-1.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    healthcheck:
+      test: curl --cacert /usr/share/elasticsearch/config/certs/ca/ca.crt -u elastic:${ELASTIC_PASSWORD} -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  apm:
+    container_name: apm
+    image: docker.elastic.co/apm/apm-server:${STACK_VERSION}
+    tty: true
+    privileged: true
+    user: root
+    restart: always
+    environment:
+      SSL_ENABLE: true
+      SSL_CERTIFICATE: "/usr/share/apm-server/certs/apm/apm.crt"
+      SSL_KEY: "/usr/share/apm-server/certs/apm/apm.key"
+      ELASTICSEARCH_HOSTS: "es01:9200"
+      ELASTICSEARCH_USERNAME: "elastic"
+      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD}"
+      ELASTICSEARCH_PROTOCOL: "https"
+      ELASTICSEARCH_SSL: true
+      ELASTICSEARCH_VERIFICATION_MODE: "full"
+      ELASTICSEARCH_CERTIFICATE_AUTHORITIES: "/usr/share/apm-server/certs/ca/ca.crt"
+      ELASTICSEARCH_CERTIFICATE: "/usr/share/apm-server/certs/node-1/node-1.crt"
+      ELASTICSEARCH_CERTIFICATE_KEY: "/usr/share/apm-server/certs/node-1/node-1.key"
+    entrypoint: "apm-server -e -strict.perms=false"
+    volumes:
+      - ./certs:/usr/share/apm-server/certs
+      - ./apm-server/apm-server.docker.yml:/usr/share/apm-server/apm-server.yml
+    ports:
+      - 8200:8200
+    links:
+      - es01
+
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    environment:
+      ELASTICSEARCH_HOSTS: '["https://es01:9200"]'
+      server_name: kibana
+      # elasticsearch_username: elastic
+      # elasticsearch_password: ${ELASTIC_PASSWORD}
+    volumes:
+      - ./certs:/usr/share/kibana/config/certs
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - 5601:5601
+    links:
+      - es01
+
+  metricbeat:
+    container_name: metricbeat
+    image: docker.elastic.co/beats/metricbeat:${STACK_VERSION}
+    tty: true
+    privileged: true
+    user: root
+    environment:
+      ELASTICSEARCH_HOSTS: "es01:9200"
+      ELASTICSEARCH_USERNAME: "elastic"
+      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD}"
+      ELASTICSEARCH_PROTOCOL: "https"
+      ELASTICSEARCH_SSL: true
+      ELASTICSEARCH_VERIFICATION_MODE: "full"
+      ELASTICSEARCH_CERTIFICATE_AUTHORITIES: "/usr/share/metricbeat/certs/ca/ca.crt"
+      ELASTICSEARCH_CERTIFICATE: "/usr/share/metricbeat/certs/node-1/node-1.crt"
+      ELASTICSEARCH_CERTIFICATE_KEY: "/usr/share/metricbeat/certs/node-1/node-1.key"
+    entrypoint: "metricbeat -e -strict.perms=false"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/usr/share/metricbeat/certs
+      - ./metricbeat/metricbeat.docker.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - ./metricbeat/modules.d:/usr/share/metricbeat/modules.d:ro
+    links:
+      - es01
+      - apm
+
+#  filebeat:
+#    container_name: filebeat
+#    image: docker.elastic.co/beats/filebeat:${STACK_VERSION}
+#    tty: true
+#    privileged: true
+#    user: root
+#    environment:
+#      ELASTICSEARCH_HOSTS: "es01:9200"
+#      ELASTICSEARCH_USERNAME: "elastic"
+#      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD}"
+#      ELASTICSEARCH_PROTOCOL: "https"
+#      ELASTICSEARCH_SSL: true
+#      ELASTICSEARCH_VERIFICATION_MODE: "full"
+#      ELASTICSEARCH_CERTIFICATE_AUTHORITIES: "/usr/share/filebeat/certs/ca/ca.crt"
+#      ELASTICSEARCH_CERTIFICATE: "/usr/share/filebeat/certs/node-1/node-1.crt"
+#      ELASTICSEARCH_CERTIFICATE_KEY: "/usr/share/filebeat/certs/node-1/node-1.key"
+#    entrypoint: "filebeat -e -strict.perms=false"
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
+#      - ./certs:/usr/share/filebeat/certs
+#      - ./filebeat/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro
+#      - ./filebeat/modules.d:/usr/share/filebeat/modules.d:ro
+#    links:
+#      - es01
+
+volumes:
+  data01:

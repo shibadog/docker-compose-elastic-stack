@@ -1,0 +1,12 @@
+# Module: beat
+# Docs: https://www.elastic.co/guide/en/beats/metricbeat/7.9/metricbeat-module-beat.html
+
+- module: beat
+  xpack.enabled: true
+  period: 10s
+  hosts:
+    - "http://localhost:5066"
+    - "http://apm:5066"
+  #username: "user"
+  #password: "secret"
+  ssl.certificate_authorities: ["/usr/share/metricbeat/certs/ca/ca.crt"]

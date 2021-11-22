@@ -1,0 +1,30 @@
+# ======================== Elasticsearch Configuration =========================
+#
+# NOTE: Elasticsearch comes with reasonable defaults for most settings.
+#       Before you set out to tweak and tune the configuration, make sure you
+#       understand what are you trying to accomplish and the consequences.
+#
+# The primary way of configuring a node is via this file. This template lists
+# the most important settings you may want to configure for a production cluster.
+#
+# Please consult the documentation for further information on configuration options:
+# https://www.elastic.co/guide/en/elasticsearch/reference/index.html
+
+cluster.name: "elastic"
+node.name: node-1
+network.host: 0.0.0.0
+
+bootstrap.system_call_filter: false
+
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certs/node-1/node-1.key
+xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certs/node-1/node-1.crt
+xpack.security.http.ssl.certificate_authorities: ["/usr/share/elasticsearch/config/certs/ca/ca.crt"]
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate
+xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/node-1/node-1.key
+xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/node-1/node-1.crt
+xpack.security.transport.ssl.certificate_authorities: ["/usr/share/elasticsearch/config/certs/ca/ca.crt"]
+
+discovery.type: single-node
+xpack.security.enabled: true

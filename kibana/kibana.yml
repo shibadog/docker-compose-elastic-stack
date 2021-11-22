@@ -1,0 +1,22 @@
+#
+# ** THIS IS AN AUTO-GENERATED FILE **
+#
+
+# Default Kibana configuration for docker target
+server.name: kibana
+server.host: "0.0.0.0"
+xpack.monitoring.ui.container.elasticsearch.enabled: true
+
+elasticsearch.ssl.verificationMode: certificate
+elasticsearch.ssl.key: /usr/share/kibana/config/certs/node-1/node-1.key
+elasticsearch.ssl.certificate: /usr/share/kibana/config/certs/node-1/node-1.crt
+elasticsearch.ssl.certificateAuthorities: ["/usr/share/kibana/config/certs/ca/ca.crt"]
+elasticsearch.username: elastic
+elasticsearch.password: test
+
+server.ssl.enabled: true
+server.ssl.certificate: /usr/share/kibana/config/certs/my-kibana/my-kibana.crt
+server.ssl.key: /usr/share/kibana/config/certs/my-kibana/my-kibana.key
+
+xpack.security.enabled: true
+xpack.encryptedSavedObjects.encryptionKey: "smzs7BEKhuFnuSCejPPyG6XTy23hNakd"

@@ -1,0 +1,17 @@
+### elastic health
+
+GET https://localhost:9200 HTTP/1.1
+Authorization: Basic elastic:test
+
+### kibana health
+
+GET https://localhost:5601/api/status HTTP/1.1
+Authorization: Basic elastic:test
+
+### apm helath
+
+GET https://localhost:8200 HTTP/1.1
+
+### apm metric
+
+GET http://localhost:5066 HTTP/1.1

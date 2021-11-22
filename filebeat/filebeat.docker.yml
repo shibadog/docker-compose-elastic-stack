@@ -1,0 +1,29 @@
+filebeat.config:
+  modules:
+    path: ${path.config}/modules.d/*.yml
+    reload.enabled: false
+
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+
+processors:
+- add_cloud_metadata: ~
+
+output.elasticsearch:
+  hosts: '${ELASTICSEARCH_HOSTS:elasticsearch:9200}'
+  username: '${ELASTICSEARCH_USERNAME:}'
+  password: '${ELASTICSEARCH_PASSWORD:}'
+  protocol: '${ELASTICSEARCH_PROTOCOL:http}'
+  ssl.enabled: ${ELASTICSEARCH_SSL:false}
+  ssl.verification_mode: "${ELASTICSEARCH_VERIFICATION_MODE:none}"
+  ssl.certificate_authorities: ["${ELASTICSEARCH_CERTIFICATE_AUTHORITIES:}"]
+  ssl.certificate: "${ELASTICSEARCH_CERTIFICATE:}"
+  ssl.key: "${ELASTICSEARCH_CERTIFICATE_KEY:}"
+
+http.enabled: true
+http.host: localhost
+http.port: 5066
+
+logging.metrics.enabled: false

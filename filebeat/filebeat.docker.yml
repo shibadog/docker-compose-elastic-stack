@@ -1,12 +1,33 @@
 filebeat.config:
   modules:
     path: ${path.config}/modules.d/*.yml
-    reload.enabled: false
+    reload.enabled: true
 
 filebeat.autodiscover:
   providers:
     - type: docker
       hints.enabled: true
+      json.message_key: log
+      templates:
+        - condition:
+            contains:
+              docker.container.labels.org_label-schema_name: Elasticsearch
+          config:
+            - module: elasticsearch
+              server:
+                enabled: true
+                var.paths:
+                  - /var/lib/docker/containers/${data.docker.container.id}/*.log
+
+filebeat.inputs:
+- type: httpjson
+  config_version: 2
+  interval: 1m
+  url: http://localhost:5066
+  processors:
+  - decode_json_fields:
+      fields: ["message"]
+      target: "json"
 
 processors:
 - add_cloud_metadata: ~
@@ -23,7 +44,9 @@ output.elasticsearch:
   ssl.key: "${ELASTICSEARCH_CERTIFICATE_KEY:}"
 
 http.enabled: true
-http.host: localhost
+http.host: 0.0.0.0
 http.port: 5066
 
 logging.metrics.enabled: false
+
+monitoring.cluster_uuid: "${CLUSTER_UUID}"

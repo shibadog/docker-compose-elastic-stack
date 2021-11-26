@@ -1,0 +1,15 @@
+http.host: 0.0.0.0
+
+config.reload.automatic: true
+
+xpack.monitoring.enabled: false
+
+monitoring.cluster_uuid: "${CLUSTER_UUID}"
+
+xpack.management.enabled: true
+xpack.management.elasticsearch.hosts: '${ELASTICSEARCH_HOSTS:elasticsearch:9200}'
+xpack.management.elasticsearch.username: '${ELASTICSEARCH_USERNAME:}'
+xpack.management.elasticsearch.password: '${ELASTICSEARCH_PASSWORD:}'
+xpack.management.logstash.poll_interval: 5s
+xpack.management.elasticsearch.ssl.certificate_authority: "${ELASTICSEARCH_CERTIFICATE_AUTHORITIES:}"
+xpack.management.pipeline.id: ["test", "mng-*"]

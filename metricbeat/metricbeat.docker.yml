@@ -43,3 +43,5 @@ http.host: localhost
 http.port: 5066
 
 logging.metrics.enabled: false
+
+monitoring.cluster_uuid: "${CLUSTER_UUID}"

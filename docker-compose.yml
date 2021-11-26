@@ -50,6 +50,9 @@ services:
       retries: 5
     depends_on:
       - create_certs
+    labels:
+      co.elastic.logs/module: elasticsearch
+      co.elastic.logs/fileset.stdout: server
 
   apm:
     container_name: apm
@@ -116,7 +119,11 @@ services:
       ELASTICSEARCH_CERTIFICATE_AUTHORITIES: "/usr/share/metricbeat/certs/ca/ca.crt"
       ELASTICSEARCH_CERTIFICATE: "/usr/share/metricbeat/certs/node-1/node-1.crt"
       ELASTICSEARCH_CERTIFICATE_KEY: "/usr/share/metricbeat/certs/node-1/node-1.key"
-    entrypoint: "metricbeat -e -strict.perms=false"
+      CLUSTER_UUID: ${CLUSTER_UUID}
+    entrypoint: |
+      bash -c "
+      metricbeat -e -strict.perms=false;
+      "
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs:/usr/share/metricbeat/certs
@@ -125,35 +132,68 @@ services:
     links:
       - es01
       - apm
+      - logstash
+      - filebeat
     depends_on:
       - create_certs
+      - es01
 
-#  filebeat:
-#    container_name: filebeat
-#    image: docker.elastic.co/beats/filebeat:${STACK_VERSION}
-#    tty: true
-#    privileged: true
-#    user: root
-#    environment:
-#      ELASTICSEARCH_HOSTS: "es01:9200"
-#      ELASTICSEARCH_USERNAME: "elastic"
-#      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD}"
-#      ELASTICSEARCH_PROTOCOL: "https"
-#      ELASTICSEARCH_SSL: true
-#      ELASTICSEARCH_VERIFICATION_MODE: "full"
-#      ELASTICSEARCH_CERTIFICATE_AUTHORITIES: "/usr/share/filebeat/certs/ca/ca.crt"
-#      ELASTICSEARCH_CERTIFICATE: "/usr/share/filebeat/certs/node-1/node-1.crt"
-#      ELASTICSEARCH_CERTIFICATE_KEY: "/usr/share/filebeat/certs/node-1/node-1.key"
-#    entrypoint: "filebeat -e -strict.perms=false"
-#    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock:ro
-#      - ./certs:/usr/share/filebeat/certs
-#      - ./filebeat/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro
-#      - ./filebeat/modules.d:/usr/share/filebeat/modules.d:ro
-#    links:
-#      - es01
-#    depends_on:
-#      - create_certs
+  filebeat:
+    container_name: filebeat
+    image: docker.elastic.co/beats/filebeat:${STACK_VERSION}
+    tty: true
+    privileged: true
+    user: root
+    environment:
+      ELASTICSEARCH_HOSTS: "es01:9200"
+      ELASTICSEARCH_USERNAME: "elastic"
+      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD}"
+      ELASTICSEARCH_PROTOCOL: "https"
+      ELASTICSEARCH_SSL: true
+      ELASTICSEARCH_VERIFICATION_MODE: "full"
+      ELASTICSEARCH_CERTIFICATE_AUTHORITIES: "/usr/share/filebeat/certs/ca/ca.crt"
+      ELASTICSEARCH_CERTIFICATE: "/usr/share/filebeat/certs/node-1/node-1.crt"
+      ELASTICSEARCH_CERTIFICATE_KEY: "/usr/share/filebeat/certs/node-1/node-1.key"
+      CLUSTER_UUID: ${CLUSTER_UUID}
+    entrypoint: "filebeat -e -strict.perms=false"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/usr/share/filebeat/certs
+      - ./filebeat/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./filebeat/modules.d:/usr/share/filebeat/modules.d:ro
+    expose:
+      - 5066
+    links:
+      - es01
+    depends_on:
+      - create_certs
+      - es01
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${STACK_VERSION}
+    container_name: logstash
+    tty: true
+    privileged: true
+    user: root
+    environment:
+      ELASTICSEARCH_HOSTS: "https://es01:9200"
+      ELASTICSEARCH_USERNAME: "elastic"
+      ELASTICSEARCH_PASSWORD: "${ELASTIC_PASSWORD}"
+      ELASTICSEARCH_CERTIFICATE_AUTHORITIES: "/usr/share/logstash/certs/ca/ca.crt"
+      CLUSTER_UUID: ${CLUSTER_UUID}
+    volumes:
+      - ./certs:/usr/share/logstash/certs
+      - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+    links:
+      - es01
+      - apm
+    ports:
+      - 5044
+    expose:
+      - 9600
+    depends_on:
+      - create_certs
+      - es01
 
 volumes:
   data01:

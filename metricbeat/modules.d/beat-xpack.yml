@@ -7,6 +7,7 @@
   hosts:
     - "http://localhost:5066"
     - "http://apm:5066"
+    - "http://filebeat:5066"
   #username: "user"
   #password: "secret"
   ssl.certificate_authorities: ["/usr/share/metricbeat/certs/ca/ca.crt"]
